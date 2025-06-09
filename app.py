@@ -45,10 +45,11 @@ def main():
         filtered = filtered[filtered['inventory'] == selected_inventory]
 
     # Aggregation
-    ending_balance_summary = (
-        filtered.groupby(['month', 'asset'])['assetBalance']
-        .last()
-        .reset_index(name='ending_balance')
+    latest_balance = (
+        filtered.sort_values('timestamp')
+        .groupby(['month', 'asset', 'inventory'], as_index=False)
+        .last()[['month', 'asset', 'inventory', 'assetBalance']]
+        .rename(columns={'assetBalance': 'ending_balance'})
     )
 
     agg_fields = ['shortTermGainLoss', 'longTermGainLoss']
@@ -65,8 +66,8 @@ def main():
 
     combined = pd.merge(
         gain_loss_summary,
-        ending_balance_summary,
-        on=['month', 'asset'],
+        latest_balance,
+        on=['month', 'asset', 'inventory'],
         how='left'
     )
 
