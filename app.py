@@ -53,9 +53,12 @@ def main():
     )
 
     agg_fields = ['shortTermGainLoss', 'longTermGainLoss']
-    if 'impairmentExpense' in df.columns:
+    include_impairment_expense = 'impairmentExpense' in df.columns
+    include_impairment_reversal = 'impairmentReversal' in df.columns
+
+    if include_impairment_expense:
         agg_fields.append('impairmentExpense')
-    if 'impairmentReversal' in df.columns:
+    if include_impairment_reversal:
         agg_fields.append('impairmentReversal')
 
     gain_loss_summary = (
@@ -75,9 +78,17 @@ def main():
     total_st = combined['shortTermGainLoss'].sum()
     total_lt = combined['longTermGainLoss'].sum()
     st.subheader(f"Summary for {selected_month}")
-    col1, col2 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Short-Term Gain/Loss", f"${total_st:,.2f}")
     col2.metric("Long-Term Gain/Loss", f"${total_lt:,.2f}")
+
+    if include_impairment_expense:
+        total_impairment = combined['impairmentExpense'].sum()
+        col3.metric("Impairment Expense", f"${total_impairment:,.2f}")
+
+    if include_impairment_reversal:
+        total_reversal = combined['impairmentReversal'].sum()
+        col4.metric("Impairment Reversal", f"${total_reversal:,.2f}")
 
     st.markdown("---")
     st.subheader("📁 Per Asset & Inventory Details")
