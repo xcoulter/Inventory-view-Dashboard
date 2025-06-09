@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 
@@ -7,6 +6,13 @@ def load_data(uploaded_file):
     df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
     df['month'] = df['timestamp'].dt.to_period('M')
     df = df[df['status'] == 'complete']
+
+    # Handle missing inventory column or values
+    if 'inventory' not in df.columns:
+        df['inventory'] = 'Unspecified'
+    else:
+        df['inventory'] = df['inventory'].fillna('Unspecified')
+
     return df
 
 def main():
@@ -45,8 +51,14 @@ def main():
         .reset_index(name='ending_balance')
     )
 
+    agg_fields = ['shortTermGainLoss', 'longTermGainLoss']
+    if 'impairmentExpense' in df.columns:
+        agg_fields.append('impairmentExpense')
+    if 'impairmentReversal' in df.columns:
+        agg_fields.append('impairmentReversal')
+
     gain_loss_summary = (
-        filtered.groupby(['month', 'asset', 'inventory'])[['shortTermGainLoss', 'longTermGainLoss']]
+        filtered.groupby(['month', 'asset', 'inventory'])[agg_fields]
         .sum()
         .reset_index()
     )
