@@ -1,9 +1,18 @@
 import streamlit as st
 import pandas as pd
+import pytz
 
-def load_data(uploaded_file):
+
+def load_data(uploaded_file, selected_timezone):
     df = pd.read_csv(uploaded_file)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce', utc=True)
+
+    # Convert to selected timezone
+    try:
+        df['timestamp'] = df['timestamp'].dt.tz_convert(selected_timezone)
+    except Exception:
+        st.warning("Timezone conversion failed. Showing timestamps in UTC.")
+
     df['month'] = df['timestamp'].dt.to_period('M')
     df = df[df['status'] == 'complete']
 
@@ -15,17 +24,24 @@ def load_data(uploaded_file):
 
     return df
 
+
 def main():
     st.set_page_config(page_title="Monthly Actions Report", layout="wide")
     st.title("📊 Monthly Actions Summary")
 
     uploaded_file = st.sidebar.file_uploader("Upload Actions Report CSV", type="csv")
 
+    # Timezone selection
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🕒 Timezone")
+    timezones = pytz.all_timezones
+    selected_timezone = st.sidebar.selectbox("Select your timezone", ["UTC"] + timezones, index=0)
+
     if uploaded_file is None:
         st.info("Please upload an actions report CSV to get started.")
         return
 
-    df = load_data(uploaded_file)
+    df = load_data(uploaded_file, selected_timezone)
 
     # Sidebar Filters
     st.sidebar.header("🔍 Filters")
@@ -97,6 +113,7 @@ def main():
     st.subheader("📁 Per Asset & Inventory Details")
     with st.expander("Click to view detailed table"):
         st.dataframe(combined)
+
 
 if __name__ == "__main__":
     main()
